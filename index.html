@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MindAir — прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0C18; --surface:#141729; --surface2:#1B1F38; --line:rgba(255,255,255,.08);
+  --txt:#F3F2FF; --txt2:#9AA0C4; --txt3:#686F97;
+  --sun1:#FF8A5B; --sun2:#FFC268; --sky:#5BA7FF; --sky2:#7DE0D6; --ok:#49DE91; --warn:#FFB648;
+  --radius:20px;
+}
+:root:not([data-theme="light"]){color-scheme:dark;}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--txt); font-family:'Manrope',sans-serif;
+  padding-top:env(safe-area-inset-top,0); padding-bottom:env(safe-area-inset-bottom,0);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.disp{font-family:'Unbounded',sans-serif;}
+.stage{min-height:100%; display:flex; align-items:center; justify-content:center; padding:28px 12px;
+  background:
+    radial-gradient(900px 500px at 15% -10%, #241233 0%, transparent 60%),
+    radial-gradient(700px 500px at 110% 10%, #0E2A3A 0%, transparent 55%), var(--bg);}
+.phone{width:380px; height:800px; background:var(--bg); border-radius:46px; position:relative;
+  border:10px solid #000; box-shadow:0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
+  overflow:hidden; display:flex; flex-direction:column;}
+.notch{position:absolute; top:10px; left:50%; transform:translateX(-50%); width:120px; height:22px;
+  background:#000; border-radius:14px; z-index:50;}
+.statusbar{height:48px; flex:none; display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 24px 6px; font-size:13px; font-weight:700; color:var(--txt);}
+.app{flex:1; position:relative; overflow:hidden;}
+.screen{position:absolute; inset:0; overflow-y:auto; padding:4px 18px 110px; opacity:0; pointer-events:none;
+  transform:translateY(6px); transition:opacity .22s ease, transform .22s ease;}
+.screen.active{opacity:1; pointer-events:auto; transform:none;}
+.screen::-webkit-scrollbar{display:none;}
+
+/* ---- splash ---- */
+#s-splash{padding:0; display:flex; flex-direction:column;}
+.splash-bg{position:relative; flex:1; display:flex; flex-direction:column; align-items:center;
+  padding:46px 26px 28px; text-align:center; overflow:hidden;
+  background:
+    radial-gradient(420px 260px at 50% 86%, rgba(255,138,91,.35) 0%, transparent 70%),
+    linear-gradient(180deg, #0A0C1C 0%, #141432 42%, #2B2048 68%, #3A2A3E 100%);}
+.star{position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; opacity:.7;}
+.horizon{position:absolute; left:0; right:0; bottom:0; height:110px;
+  background:linear-gradient(180deg, transparent, rgba(255,178,104,.16) 60%, rgba(255,178,104,.28));}
+.trail{position:absolute; top:92px; left:-10px; width:230px; opacity:.55; color:var(--sky2);}
+.app-icon{width:76px; height:76px; border-radius:22px; background:linear-gradient(135deg,var(--sun1),var(--sky));
+  display:flex; align-items:center; justify-content:center; margin:18px auto 16px; box-shadow:0 14px 30px -8px rgba(255,138,91,.55);}
+.splash-bg h1{font-size:34px; margin:0 0 4px; letter-spacing:.2px;}
+.splash-tag{color:var(--sky2); font-weight:700; font-size:12.5px; letter-spacing:.3px; margin-bottom:30px;}
+.welcome-card{background:rgba(255,255,255,.06); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.14);
+  border-radius:24px; padding:26px 22px; margin-top:auto;}
+.welcome-ico{width:50px; height:50px; border-radius:16px; margin:0 auto 16px; background:linear-gradient(135deg,var(--sky),var(--sky2));
+  display:flex; align-items:center; justify-content:center; font-size:22px;}
+.welcome-card h2{font-size:21px; line-height:1.3; margin:0 0 10px; color:#fff;}
+.welcome-card p{font-size:13px; color:var(--txt2); line-height:1.55; margin:0;}
+.feat-row{display:flex; justify-content:space-between; gap:6px; margin:22px 0 24px;}
+.feat{display:flex; flex-direction:column; align-items:center; gap:7px; flex:1;}
+.feat .ic{width:42px; height:42px; border-radius:13px; background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center; font-size:18px;}
+.feat span{font-size:10px; font-weight:700; color:var(--txt2);}
+.cta{width:100%; padding:16px; border-radius:17px; border:none; cursor:pointer;
+  background:linear-gradient(120deg,var(--sun1),var(--sun2)); color:#1C0F00; font-weight:800; font-size:15px;
+  font-family:'Manrope'; display:flex; align-items:center; justify-content:center; gap:8px;}
+
+/* ---- shared bits ---- */
+.row{display:flex; align-items:center;}
+.between{justify-content:space-between;}
+.muted{color:var(--txt2);}
+.tiny{font-size:12px; color:var(--txt3);}
+.pill{display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:99px;
+  background:var(--surface2); border:1px solid var(--line); font-size:12.5px; font-weight:600; color:var(--txt2);}
+.card{background:linear-gradient(180deg, var(--surface), var(--surface2)); border:1px solid var(--line);
+  border-radius:var(--radius); padding:16px;}
+.btn{border:none; cursor:pointer; font-family:'Manrope',sans-serif;}
+.btn-primary{background:linear-gradient(120deg,var(--sun1),var(--sun2)); color:#1C0F00; font-weight:800;
+  padding:14px 18px; border-radius:16px; font-size:14.5px; width:100%;}
+.btn-ghost{background:var(--surface2); color:var(--txt); border:1px solid var(--line); font-weight:700;
+  padding:12px 16px; border-radius:14px; font-size:13.5px;}
+.icon{width:20px; height:20px; display:block;}
+.badge-ico{width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  font-size:19px; flex:none;}
+svg{stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+
+/* ---- top bar ---- */
+.topbar{padding:10px 2px 14px; display:flex; align-items:center; justify-content:space-between;}
+.hello{font-size:12.5px; color:var(--txt2); margin:0 0 2px;}
+.hello b{color:var(--txt);}
+.h-title{font-size:21px; margin:0; font-weight:700;}
+.bell{position:relative; width:42px; height:42px; border-radius:13px; background:var(--surface2);
+  border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+.dot{position:absolute; top:9px; right:10px; width:8px; height:8px; border-radius:50%; background:var(--sun1);
+  box-shadow:0 0 0 2px var(--bg);}
+
+/* ---- prompt entry ---- */
+.ask{display:flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid var(--line);
+  border-radius:16px; padding:13px 14px; margin-bottom:16px; cursor:pointer;}
+.ask .ai-dot{width:9px; height:9px; border-radius:50%; background:linear-gradient(120deg,var(--sun1),var(--sky));
+  flex:none; animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ask span{color:var(--txt2); font-size:13.5px; flex:1;}
+
+.sectitle{font-size:12.5px; font-weight:800; color:var(--txt3); letter-spacing:.3px; margin:20px 0 10px;}
+
+/* trip hero */
+.trip-card{border-radius:22px; padding:18px; position:relative; overflow:hidden; color:#fff;
+  background:linear-gradient(135deg,#2A1B55 0%, #15325B 55%, #0E3F4C 100%);}
+.trip-card::after{content:"✈"; position:absolute; right:-14px; bottom:-26px; font-size:120px; opacity:.08; transform:rotate(18deg);}
+.trip-card .pill{background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.2);}
+.trip-card h3{font-size:19px; margin:10px 0 2px;}
+.progress{height:6px; border-radius:99px; background:rgba(255,255,255,.18); margin-top:14px; overflow:hidden;}
+.progress i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--sun1),var(--sky2));}
+
+/* quick actions */
+.qgrid{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; margin-top:4px;}
+.qgrid button{background:var(--surface); border:1px solid var(--line); border-radius:15px; padding:12px 4px;
+  display:flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; color:var(--txt);}
+.qgrid span{font-size:10.5px; font-weight:700; color:var(--txt2); text-align:center;}
+.qgrid .ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+
+/* event rows */
+.ev{display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--line);}
+.ev:last-child{border-bottom:none;}
+.ev b{display:block; font-size:14px; font-weight:700;}
+.chev{margin-left:auto; color:var(--txt3); flex:none;}
+
+/* notifications dropdown */
+.notifwrap{position:absolute; inset:0; background:rgba(5,6,14,.55); z-index:60; opacity:0; pointer-events:none; transition:opacity .2s;}
+.notifwrap.open{opacity:1; pointer-events:auto;}
+.notifpanel{position:absolute; top:58px; right:16px; left:16px; background:var(--surface); border:1px solid var(--line);
+  border-radius:18px; padding:8px; box-shadow:0 20px 40px rgba(0,0,0,.5); transform:translateY(-8px); transition:transform .2s;}
+.notifwrap.open .notifpanel{transform:none;}
+.nitem{display:flex; gap:10px; padding:11px 8px; border-radius:12px;}
+.nitem:hover{background:var(--surface2);}
+.nitem b{font-size:13px; display:block; margin-bottom:2px;}
+
+/* chat */
+.chathead{display:flex; align-items:center; gap:10px; padding:8px 0 14px;}
+.avatar{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--sun1),var(--sky));
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;}
+.online{color:var(--ok); font-size:11.5px; font-weight:700;}
+.msgs{display:flex; flex-direction:column; gap:10px; padding-bottom:12px;}
+.msg{max-width:84%; padding:11px 14px; border-radius:16px; font-size:13.5px; line-height:1.5;}
+.msg.bot{background:var(--surface2); border:1px solid var(--line); border-bottom-left-radius:5px; align-self:flex-start;}
+.msg.me{background:linear-gradient(120deg,var(--sun1),var(--sun2)); color:#1C0F00; font-weight:600;
+  border-bottom-right-radius:5px; align-self:flex-end;}
+.chips{display:flex; gap:7px; flex-wrap:wrap; margin:2px 0 4px;}
+.chip{background:var(--surface2); border:1px solid var(--line); color:var(--txt2); font-size:11.5px; font-weight:700;
+  padding:7px 11px; border-radius:99px; cursor:pointer;}
+.composer{position:absolute; left:18px; right:18px; bottom:14px; display:flex; gap:8px; align-items:center;
+  background:var(--surface2); border:1px solid var(--line); border-radius:16px; padding:6px 6px 6px 14px;}
+.composer input{flex:1; background:none; border:none; outline:none; color:var(--txt); font-family:'Manrope'; font-size:13.5px;}
+.composer input::placeholder{color:var(--txt3);}
+.sendbtn{width:36px; height:36px; border-radius:11px; background:linear-gradient(120deg,var(--sun1),var(--sky));
+  display:flex; align-items:center; justify-content:center; color:#1C0F00; flex:none;}
+
+/* budget */
+.ring-wrap{display:flex; align-items:center; gap:16px;}
+.ring{width:84px; height:84px; border-radius:50%; flex:none;
+  background:conic-gradient(var(--sun1) 0% 58%, var(--surface2) 58% 100%);
+  display:flex; align-items:center; justify-content:center;}
+.ring b{width:64px;height:64px;border-radius:50%;background:var(--surface); display:flex; align-items:center;
+  justify-content:center; font-size:14px; font-family:'Unbounded';}
+.catrow{margin-bottom:14px;}
+.catrow .row{margin-bottom:6px;}
+.bar{height:7px; border-radius:99px; background:var(--surface2); overflow:hidden;}
+.bar i{display:block; height:100%; border-radius:99px;}
+
+/* packing */
+.cklist{display:flex; align-items:center; gap:12px; padding:11px 2px; border-bottom:1px solid var(--line); cursor:pointer;}
+.cklist:last-child{border-bottom:none;}
+.chk{width:22px; height:22px; border-radius:7px; border:1.8px solid var(--txt3); flex:none; display:flex;
+  align-items:center; justify-content:center; transition:.15s;}
+.cklist.done .chk{background:var(--ok); border-color:var(--ok); color:#06160C;}
+.cklist.done span{color:var(--txt3); text-decoration:line-through;}
+.groupcard{margin-bottom:14px;}
+
+/* map */
+.mapbox{position:relative; height:430px; border-radius:20px; overflow:hidden;
+  background:
+   radial-gradient(260px 200px at 20% 20%, #123427 0%, transparent 60%),
+   radial-gradient(260px 220px at 85% 75%, #0E2A44 0%, transparent 60%), #0C1024;
+  border:1px solid var(--line);}
+.mapbox svg.route{position:absolute; inset:0; width:100%; height:100%;}
+.pin{position:absolute; width:30px; height:30px; border-radius:50% 50% 50% 0; transform:translate(-50%,-100%) rotate(-45deg);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 14px rgba(0,0,0,.4);}
+.pin span{transform:rotate(45deg); font-size:13px;}
+.toggle3{display:flex; gap:6px; background:var(--surface2); border:1px solid var(--line); border-radius:13px; padding:4px; margin-bottom:14px;}
+.toggle3 button{flex:1; background:none; border:none; color:var(--txt2); font-weight:700; font-size:12px; padding:8px 0; border-radius:10px;}
+.toggle3 button.on{background:var(--surface); color:var(--txt); box-shadow:0 2px 6px rgba(0,0,0,.3);}
+.sheet{position:absolute; left:10px; right:10px; bottom:10px; background:var(--surface); border:1px solid var(--line);
+  border-radius:16px; padding:14px; transform:translateY(120%); transition:transform .25s ease;}
+.sheet.open{transform:none;}
+.sheet .row.between{margin-bottom:6px;}
+
+/* trip (командировка) */
+.limitcard{margin-bottom:16px;}
+.doc{display:flex; align-items:center; gap:11px; padding:12px 0; border-bottom:1px solid var(--line);}
+.doc:last-child{border-bottom:none;}
+.doc b{font-size:13.5px; display:block;}
+.fab{position:absolute; right:18px; bottom:96px; width:52px; height:52px; border-radius:16px;
+  background:linear-gradient(135deg,var(--sun1),var(--sun2)); display:flex; align-items:center; justify-content:center;
+  color:#1C0F00; box-shadow:0 10px 24px -6px rgba(255,138,91,.6); cursor:pointer; z-index:5;}
+
+/* modal */
+.modalwrap{position:absolute; inset:0; background:rgba(5,6,14,.6); z-index:70; opacity:0; pointer-events:none; transition:opacity .2s;}
+.modalwrap.open{opacity:1; pointer-events:auto;}
+.modal{position:absolute; left:0; right:0; bottom:0; background:var(--surface); border-radius:22px 22px 0 0;
+  border:1px solid var(--line); padding:18px 18px 26px; transform:translateY(100%); transition:transform .25s ease;}
+.modalwrap.open .modal{transform:none;}
+.handle{width:38px; height:4px; background:var(--line); border-radius:99px; margin:0 auto 14px;}
+.drop{border:1.5px dashed var(--line); border-radius:16px; padding:20px; text-align:center; margin:12px 0; color:var(--txt2); font-size:12.5px;}
+.field{background:var(--surface2); border:1px solid var(--line); border-radius:13px; padding:12px 14px; margin-bottom:10px;}
+.field label{font-size:11px; color:var(--txt3); font-weight:700; display:block; margin-bottom:3px;}
+.field input{background:none; border:none; outline:none; color:var(--txt); width:100%; font-family:'Manrope'; font-size:13.5px;}
+
+/* nav */
+.nav{flex:none; display:flex; align-items:center; justify-content:space-around; padding:10px 10px calc(10px + env(safe-area-inset-bottom,0));
+  background:rgba(20,23,41,.9); backdrop-filter:blur(10px); border-top:1px solid var(--line);}
+.navbtn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--txt3); cursor:pointer; font-size:10px; font-weight:700;}
+.navbtn.active{color:var(--txt);}
+.navbtn.active svg{stroke:var(--sun1);}
+.navmid{width:48px; height:48px; border-radius:15px; background:linear-gradient(135deg,var(--sun1),var(--sky));
+  display:flex; align-items:center; justify-content:center; margin-top:-26px; box-shadow:0 10px 20px -4px rgba(255,138,91,.55);}
+.navmid svg{stroke:#1C0F00;}
+
+@media (max-width:460px){
+  .stage{padding:0;}
+  .phone{width:100%; height:100dvh; border-radius:0; border:none; box-shadow:none;}
+  .notch{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span>MindAir</span><span>100%</span></div>
+  <div class="app">
+
+    <!-- SPLASH -->
+    <section class="screen active" id="s-splash">
+      <div class="splash-bg">
+        <div class="star" style="left:12%; top:8%"></div><div class="star" style="left:26%; top:16%"></div>
+        <div class="star" style="left:72%; top:6%"></div><div class="star" style="left:85%; top:20%"></div>
+        <div class="star" style="left:48%; top:4%"></div><div class="star" style="left:18%; top:28%"></div>
+        <div class="star" style="left:62%; top:24%"></div><div class="star" style="left:90%; top:34%"></div>
+        <svg class="trail" viewBox="0 0 230 40"><path d="M0 34 Q90 34 150 12" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 6" fill="none"/><g transform="translate(150,12) rotate(-28)"><path d="M0 0l10 4-3-4 3-4z" fill="currentColor" stroke="none"/></g></svg>
+        <div class="horizon"></div>
+
+        <div class="app-icon"><svg class="icon" style="width:36px;height:36px;color:#1C0F00" viewBox="0 0 24 24" stroke-width="2.2"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-8-8-4L21 3z"/></svg></div>
+        <h1>MindAir</h1>
+        <div class="splash-tag">✦ AI-ассистент путешествий и командировок</div>
+
+        <div class="welcome-card">
+          <div class="welcome-ico">👋</div>
+          <h2>Привет! Куда<br>отправляемся?</h2>
+          <p>Расскажите AI-ассистенту о поездке — маршрут, бюджет и чек-лист соберутся сами, для отпуска и для командировки.</p>
+          <div class="feat-row">
+            <div class="feat"><div class="ic">🗺️</div><span>Маршрут</span></div>
+            <div class="feat"><div class="ic">💳</div><span>Бюджет</span></div>
+            <div class="feat"><div class="ic">🧳</div><span>Чемодан</span></div>
+            <div class="feat"><div class="ic">📁</div><span>Команди­ровка</span></div>
+          </div>
+          <button class="cta" onclick="go('s-home')">Начать планирование <svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOME -->
+    <section class="screen" id="s-home">
+      <div class="topbar">
+        <div><p class="hello">Привет, <b>Алексей</b> 👋</p><h1 class="h-title">Куда летим?</h1></div>
+        <div class="bell" onclick="toggleNotif(true)"><div class="dot"></div>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M9.5 21a2.5 2.5 0 0 0 5 0"/></svg>
+        </div>
+      </div>
+
+      <div class="ask" onclick="go('s-chat')">
+        <div class="ai-dot"></div><span>Спроси AI: «Куда поехать в июне на выходные?»</span>
+        <svg class="icon" style="width:16px;height:16px;color:var(--txt3)" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+
+      <p class="sectitle">АКТИВНАЯ ПОЕЗДКА</p>
+      <div class="trip-card" onclick="go('s-map')">
+        <span class="pill">✈ В пути</span>
+        <h3>Токио и Осака</h3>
+        <div class="tiny">Япония · 15–25 апреля · День 3 из 8</div>
+        <div class="progress"><i style="width:34%"></i></div>
+      </div>
+
+      <p class="sectitle">БЫСТРЫЕ ДЕЙСТВИЯ</p>
+      <div class="qgrid">
+        <button onclick="go('s-chat')"><span class="ic" style="background:#3A2250">💬</span><span>AI чат</span></button>
+        <button onclick="go('s-budget')"><span class="ic" style="background:#203A2E">💳</span><span>Бюджет</span></button>
+        <button onclick="go('s-map')"><span class="ic" style="background:#1D2E4A">🗺️</span><span>Карта</span></button>
+        <button onclick="go('s-pack')"><span class="ic" style="background:#3A2A1C">🧳</span><span>Чемодан</span></button>
+        <button onclick="go('s-trip')"><span class="ic" style="background:#30232F">📁</span><span>Команди­ровка</span></button>
+      </div>
+
+      <p class="sectitle">БЛИЖАЙШИЕ СОБЫТИЯ</p>
+      <div class="card">
+        <div class="ev"><div class="badge-ico" style="background:#1D2E4A">✈️</div>
+          <div><b>Вылет SU274 · Москва → Токио</b><span class="tiny">15 апр, 23:55 · Шереметьево, Т-D</span></div><svg class="icon chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="ev"><div class="badge-ico" style="background:#3A2A1C">🏨</div>
+          <div><b>Shinjuku Grand Hotel</b><span class="tiny">16 апр · заезд с 14:00</span></div><svg class="icon chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="ev"><div class="badge-ico" style="background:#203A2E">🏛️</div>
+          <div><b>Национальный музей Токио</b><span class="tiny">17 апр, 10:00 · Уэно</span></div><svg class="icon chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div class="ev"><div class="badge-ico" style="background:#2A2440">🧳</div>
+          <div><b>Выезд из отеля</b><span class="tiny">20 апр, 11:00 · Shinjuku Grand Hotel</span></div><svg class="icon chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+      <div style="height:6px"></div>
+    </section>
+
+    <!-- CHAT -->
+    <section class="screen" id="s-chat">
+      <div class="chathead">
+        <button class="navbtn" onclick="go('s-home')" style="color:var(--txt)"><svg class="icon" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="avatar">🤖</div>
+        <div><b style="font-size:14.5px">AI-ассистент MindAir</b><div class="online">● на связи</div></div>
+      </div>
+      <div class="msgs">
+        <div class="msg bot">Привет! Я помогу спланировать маршрут, бюджет и чек-лист для поездки. Куда отправляемся?</div>
+        <div class="chips"><span class="chip">Токио за 3 дня</span><span class="chip">Бюджет Европа</span><span class="chip">Чек-лист в командировку</span></div>
+        <div class="msg me">Что добавить в маршрут на 17 апреля в Токио?</div>
+        <div class="msg bot">На 17 апреля сейчас пик цветения сакуры в парке Синдзюку-Гёэн — советую прийти к открытию, в 9:00, чтобы избежать толпы. После — пешком 15 мин до музея Токио, вечером рамен в Ichiran. Добавить в маршрут?</div>
+        <div class="chips"><span class="chip">Добавить в маршрут</span><span class="chip">Показать на карте</span></div>
+      </div>
+      <div class="composer"><input placeholder="Спросите что угодно…">
+        <div class="sendbtn"><svg class="icon" style="width:17px;height:17px" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+    </section>
+
+    <!-- BUDGET -->
+    <section class="screen" id="s-budget">
+      <div class="topbar"><h1 class="h-title">Бюджет поездки</h1>
+        <button class="navbtn" onclick="go('s-home')" style="color:var(--txt)"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="card ring-wrap">
+        <div class="ring"><b>58%</b></div>
+        <div><div class="tiny">ТОКИО И ОСАКА</div><div class="disp" style="font-size:24px; font-weight:700">210 000 ₽</div>
+        <div class="tiny">потрачено 122 000 ₽ · осталось 88 000 ₽</div></div>
+      </div>
+      <p class="sectitle">ПО КАТЕГОРИЯМ</p>
+      <div class="card">
+        <div class="catrow"><div class="row between"><span>✈️ Транспорт</span><b>68 000 ₽</b></div><div class="bar"><i style="width:82%;background:var(--sun1)"></i></div></div>
+        <div class="catrow"><div class="row between"><span>🏨 Жильё</span><b>52 000 ₽</b></div><div class="bar"><i style="width:80%;background:var(--sky)"></i></div></div>
+        <div class="catrow"><div class="row between"><span>🍜 Питание</span><b>24 000 ₽</b></div><div class="bar"><i style="width:55%;background:var(--ok)"></i></div></div>
+        <div class="catrow"><div class="row between"><span>🎟️ Развлечения</span><b>14 000 ₽</b></div><div class="bar"><i style="width:40%;background:var(--sun2)"></i></div></div>
+        <div class="catrow" style="margin-bottom:0"><div class="row between"><span>🛍️ Шопинг</span><b>6 000 ₽</b></div><div class="bar"><i style="width:15%;background:var(--sky2)"></i></div></div>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section class="screen" id="s-map">
+      <div class="topbar"><h1 class="h-title">Дорожная карта</h1>
+        <button class="navbtn" onclick="go('s-home')" style="color:var(--txt)"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="toggle3"><button class="on">Карта</button><button>Таймлайн</button><button>По дням</button></div>
+      <div class="mapbox" id="mapbox">
+        <svg class="route" viewBox="0 0 320 430"><path d="M50 60 L160 110 L120 200 L210 240 L170 330 L250 370" stroke="#4A5280" stroke-width="2" stroke-dasharray="5 6" fill="none"/></svg>
+        <div class="pin" style="left:50px; top:60px; background:#5BA7FF" onclick="openPin('ap')"><span>✈️</span></div>
+        <div class="pin" style="left:160px; top:110px; background:#FFC268" onclick="openPin('hotel')"><span>🏨</span></div>
+        <div class="pin" style="left:120px; top:200px; background:#49DE91" onclick="openPin('sakura')"><span>🌸</span></div>
+        <div class="pin" style="left:210px; top:240px; background:#5BA7FF" onclick="openPin('museum')"><span>🏛️</span></div>
+        <div class="pin" style="left:170px; top:330px; background:#FF8A5B" onclick="openPin('ramen')"><span>🍜</span></div>
+        <div class="sheet" id="sheet">
+          <div class="row between"><b id="sh-title">—</b><span onclick="closePin()" style="color:var(--txt3)">✕</span></div>
+          <div class="tiny" id="sh-sub">—</div>
+          <div class="row" style="gap:8px; margin-top:10px;">
+            <span class="pill" id="sh-weather">☀️ +18°</span>
+            <span class="pill" id="sh-dir">🚶 15 мин пешком</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PACKING -->
+    <section class="screen" id="s-pack">
+      <div class="topbar"><h1 class="h-title">Чемодан</h1>
+        <button class="navbtn" onclick="go('s-home')" style="color:var(--txt)"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row between"><span class="muted" style="font-size:13px">Готовность к поездке</span><span class="disp" style="font-size:13px">12 из 18</span></div>
+        <div class="progress" style="background:var(--surface2)"><i style="width:67%"></i></div>
+      </div>
+      <div class="card groupcard">
+        <div class="row between" style="margin-bottom:4px"><b>📄 Документы</b><span class="tiny">3/4</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Паспорт</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Виза в Японию</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Страховка</span></div>
+        <div class="cklist" onclick="toggleChk(this)"><div class="chk"></div><span>Распечатки броней</span></div>
+      </div>
+      <div class="card groupcard">
+        <div class="row between" style="margin-bottom:4px"><b>👕 Одежда</b><span class="tiny">3/4</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Куртка (прохладно)</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Удобная обувь для ходьбы</span></div>
+        <div class="cklist" onclick="toggleChk(this)"><div class="chk"></div><span>Спортивный костюм</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Деловой наряд</span></div>
+      </div>
+      <div class="card groupcard" style="margin-bottom:6px">
+        <div class="row between" style="margin-bottom:4px"><b>🔌 Техника</b><span class="tiny">2/4</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Зарядка и кабель</span></div>
+        <div class="cklist" onclick="toggleChk(this)"><div class="chk"></div><span>Пауэрбанк</span></div>
+        <div class="cklist done" onclick="toggleChk(this)"><div class="chk">✓</div><span>Переходник для розетки</span></div>
+        <div class="cklist" onclick="toggleChk(this)"><div class="chk"></div><span>Визитки</span></div>
+      </div>
+    </section>
+
+    <!-- КОМАНДИРОВКА -->
+    <section class="screen" id="s-trip">
+      <div class="topbar"><h1 class="h-title">Командировка</h1>
+        <button class="navbtn" onclick="go('s-home')" style="color:var(--txt)"><svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="card limitcard">
+        <div class="row between"><b style="font-size:13.5px">Токио · 15–20 апр</b><span class="tiny">грейд M2</span></div>
+        <div class="row between" style="margin:8px 0 6px"><span class="tiny">Лимит 180 000 ₽</span><span class="tiny">потрачено 96 000 ₽</span></div>
+        <div class="bar"><i style="width:53%;background:var(--ok)"></i></div>
+      </div>
+      <p class="sectitle">ЗАГРУЖЕННЫЕ ДОКУМЕНТЫ</p>
+      <div class="card">
+        <div class="doc"><div class="badge-ico" style="background:#1D2E4A">🏨</div><div><b>Бронь отеля.pdf</b><span class="tiny">загружено сегодня, 09:12</span></div></div>
+        <div class="doc"><div class="badge-ico" style="background:#1D2E4A">✈️</div><div><b>Билет SU274.pdf</b><span class="tiny">загружено сегодня, 09:13</span></div></div>
+        <div class="doc"><div class="badge-ico" style="background:#3A2A1C">📷</div><div><b>Посадочный талон.jpg</b><span class="tiny">загружено сегодня, 09:14</span></div></div>
+        <div class="doc"><div class="badge-ico" style="background:#3A2A1C">🧾</div><div><b>Чек такси #1.jpg</b><span class="tiny">загружено вчера, 21:40</span></div></div>
+        <div class="doc"><div class="badge-ico" style="background:#30232F">🔗</div><div><b>Тревел-политика компании</b><span class="tiny">ссылка · Confluence</span></div></div>
+      </div>
+      <div style="margin:16px 0 6px"><button class="btn btn-primary">Сформировать авансовый отчёт</button></div>
+      <div class="fab" onclick="toggleModal(true)"><svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    </section>
+
+  </div>
+
+  <!-- notifications overlay -->
+  <div class="notifwrap" id="notifwrap" onclick="toggleNotif(false)">
+    <div class="notifpanel" onclick="event.stopPropagation()">
+      <div class="nitem"><div class="badge-ico" style="background:#1D2E4A">✈️</div><div><b>Регистрация на рейс SU274 открыта</b><span class="tiny">10 мин назад</span></div></div>
+      <div class="nitem"><div class="badge-ico" style="background:#203A2E">🌦️</div><div><b>Токио: +19°, возможен дождь 17 апреля</b><span class="tiny">1 ч назад</span></div></div>
+      <div class="nitem"><div class="badge-ico" style="background:#2A2440">🧳</div><div><b>Выезд из отеля через 2 часа</b><span class="tiny">сегодня, 09:00</span></div></div>
+    </div>
+  </div>
+
+  <!-- upload modal -->
+  <div class="modalwrap" id="modalwrap" onclick="toggleModal(false)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="handle"></div>
+      <h3 style="margin:0 0 12px;font-size:16px">Добавить в командировку</h3>
+      <div class="drop">📎 Перетащите файл сюда или нажмите, чтобы выбрать<br><span class="tiny">PDF, JPG, PNG — билеты, брони, чеки</span></div>
+      <div class="field"><label>ИЛИ ССЫЛКА НА ИСТОЧНИК</label><input placeholder="https://…"></div>
+      <div class="field"><label>НАЗВАНИЕ</label><input placeholder="Например, «Бронь Booking»"></div>
+      <button class="btn btn-primary" onclick="toggleModal(false)">Добавить</button>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav" id="nav" style="display:none">
+    <button class="navbtn active" data-n="s-home" onclick="go('s-home')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg>Главная</button>
+    <button class="navbtn" data-n="s-map" onclick="go('s-map')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 20l-6-3V4l6 3 6-3 6 3v13l-6-3-6 3z"/></svg>Карта</button>
+    <button class="navbtn" onclick="go('s-chat')"><div class="navmid"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div></button>
+    <button class="navbtn" data-n="s-pack" onclick="go('s-pack')"><svg class="icon" viewBox="0 0 24 24"><rect x="6" y="8" width="12" height="12" rx="2"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>Чемодан</button>
+    <button class="navbtn" data-n="s-trip" onclick="go('s-trip')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7h18v12H3z"/><path d="M3 7l3-4h12l3 4"/></svg>Команд.</button>
+  </div>
+</div>
+</div>
+
+<script>
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active', b.dataset.n===id));
+  document.getElementById('nav').style.display = (id==='s-splash') ? 'none' : 'flex';
+}
+function toggleNotif(open){ document.getElementById('notifwrap').classList.toggle('open', open); }
+function toggleModal(open){ document.getElementById('modalwrap').classList.toggle('open', open); }
+function toggleChk(el){
+  el.classList.toggle('done');
+  var chk=el.querySelector('.chk'); chk.textContent = el.classList.contains('done') ? '✓' : '';
+}
+var pins = {
+  ap:{t:'Вылет SU274 · Москва → Токио', s:'15 апр, 23:55 · Шереметьево Т-D', w:'✈️ рейс по расписанию', d:'🕑 7ч 55м в пути'},
+  hotel:{t:'Shinjuku Grand Hotel', s:'Заезд 16 апр, 14:00', w:'☁️ +16°', d:'🚕 35 мин от аэропорта'},
+  sakura:{t:'Сакура в Синдзюку-Гёэн', s:'Парк Синдзюку · день 3, 17 апр', w:'☀️ +18°, ясно', d:'🚶 15 мин от отеля'},
+  museum:{t:'Национальный музей Токио', s:'Уэно · 17 апр, 10:00', w:'☀️ +18°', d:'🚇 20 мин на метро'},
+  ramen:{t:'Ichiran Ramen', s:'Ужин · 17 апр, 19:00', w:'🌙 +14°', d:'🚶 8 мин от музея'}
+};
+function openPin(id){
+  var p=pins[id];
+  document.getElementById('sh-title').textContent=p.t;
+  document.getElementById('sh-sub').textContent=p.s;
+  document.getElementById('sh-weather').textContent=p.w;
+  document.getElementById('sh-dir').textContent=p.d;
+  document.getElementById('sheet').classList.add('open');
+}
+function closePin(){ document.getElementById('sheet').classList.remove('open'); }
+</script>
+</body>
+</html>
